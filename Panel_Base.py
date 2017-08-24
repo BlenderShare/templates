@@ -16,6 +16,8 @@ class Test_Code(bpy.types.Operator):
 
 
 class Panel_Test_Code(bpy.types.Panel):
+    '''Use this docstring to add a documentation or an information avaible
+    inside blender API.'''
     bl_idname = "panel_test_code"
     bl_label = "Panel Test Code"
     bl_space_type = "VIEW_3D"
