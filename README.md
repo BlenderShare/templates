@@ -4,10 +4,10 @@ This repository is maintained by [BlenderLounge](http://blenderlounge.fr) french
 You'll find some piece of code or snippets, for easily using it on your own blender scripts.
 
 
-Summary
-[AddOnss](https://github.com/BlenderShare/templates#addons)
-[Scripts](https://github.com/BlenderShare/templates#scripts)
-[Templates Files](https://github.com/BlenderShare/templates#templates-files)
+Contents:
+  - [AddOnss](https://github.com/BlenderShare/templates#addons)
+  - [Scripts](https://github.com/BlenderShare/templates#scripts)
+  - [Templates Files](https://github.com/BlenderShare/templates#templates-files)
 
 
 ## AddOns
