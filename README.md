@@ -3,6 +3,21 @@
 This repository is maintained by [BlenderLounge](http://blenderlounge.fr) french community users.
 You'll find some piece of code or snippets, for easily using it on your own blender scripts.
 
+
+Summary
+[AddOnss](https://github.com/BlenderShare/templates#addons)
+[Scripts](https://github.com/BlenderShare/templates#scripts)
+[Templates Files](https://github.com/BlenderShare/templates#templates-files)
+
+
+## AddOns
+
+This folder contains some little addons, to install in Blender user preferences.
+
+## Scripts
+
+This folder contains some little scripts, to execute directly in Blender text editor.
+
 ## Templates Files
 
 This folder contains python templates for blender API.
