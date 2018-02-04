@@ -125,27 +125,32 @@ class TestAddonPreferences(AddonPreferences):
             col.label(name)
             col.separator()
             km = kc.keymaps[km_name]
-            kmi = get_hotkey_entry_item(km, kmi_name, kmi_value)
-            if kmi:
-                col.context_pointer_set('keymap', km)
-                rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
+            # Needed for menus and pie_menu keymaps
+            if kmi_value:
+                get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col)
+
+            # for operators
             else:
-                col.label("No hotkey entry found")
-                col.operator(Template_add_Hotkey.bl_idname, icon = 'ZOOMIN')
+                if km.keymap_items.get(kmi_name):
+                    col.context_pointer_set('keymap', km)
+                    rna_keymap_ui.draw_kmi(
+                            [], kc, km, km.keymap_items[kmi_name], col, 0)
+                else:
+                    col.label("No hotkey entry found for {}".format(kmi_name))
+                    col.operator(Template_Add_Hotkey.bl_idname, icon = 'ZOOMIN')
 
 
 addon_keymaps = []
 
-def get_hotkey_entry_item(km, kmi_name, kmi_value):
+def get_hotkey_entry_item(kc, km, kmi, kmi_value, col):
+    for km_item in km.keymap_items:
+        if km_item.idname == kmi and km_item.properties.name == kmi_value:
+            col.context_pointer_set('keymap', km)
+            rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
+            return
 
-    for i, km_item in enumerate(km.keymap_items):
-        if km.keymap_items.keys()[i] == kmi_name:
-            if kmi_value:
-                if km.keymap_items[i].properties.name == kmi_value:
-                    return km_item
-            return km_item
-
-    return None
+    col.label("No hotkey entry found for {}".format(kmi_value))
+    col.operator(Template_Add_Hotkey.bl_idname, icon='ZOOMIN')
 
 
 def add_hotkey():
@@ -172,7 +177,7 @@ def add_hotkey():
 class Template_Add_Hotkey(bpy.types.Operator):
     ''' Add hotkey entry '''
     bl_idname = "template.add_hotkey"
-    bl_label = "Addon Preferences"
+    bl_label = "Add Hotkeys"
     bl_options = {'REGISTER', 'INTERNAL'}
 
     def execute(self, context):
