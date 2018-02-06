@@ -114,43 +114,49 @@ class TestAddonPreferences(AddonPreferences):
 
     def draw(self, context):
         wm = context.window_manager
-        kc = wm.keyconfigs.user
         layout = self.layout
 
-        for name, items in keymaps_items_dict.items():
-            kmi_name, kmi_value, km_name = items[:3]
-            box = layout.box()
-            split = box.split()
-            col = split.column()
-            col.label(name)
-            col.separator()
-            km = kc.keymaps[km_name]
-            # Needed for menus and pie_menu keymaps
-            if kmi_value:
-                get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col)
-
-            # for operators
-            else:
-                if km.keymap_items.get(kmi_name):
-                    col.context_pointer_set('keymap', km)
-                    rna_keymap_ui.draw_kmi(
-                            [], kc, km, km.keymap_items[kmi_name], col, 0)
-                else:
-                    col.label("No hotkey entry found for {}".format(kmi_name))
-                    col.operator(Template_Add_Hotkey.bl_idname, icon = 'ZOOMIN')
+        draw_keymap_items(wm, layout)
 
 
 addon_keymaps = []
 
-def get_hotkey_entry_item(kc, km, kmi, kmi_value, col):
-    for km_item in km.keymap_items:
-        if km_item.idname == kmi and km_item.properties.name == kmi_value:
-            col.context_pointer_set('keymap', km)
-            rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
-            return
+def draw_keymap_items(wm, layout):
+    kc = wm.keyconfigs.user
 
-    col.label("No hotkey entry found for {}".format(kmi_value))
-    col.operator(Template_Add_Hotkey.bl_idname, icon='ZOOMIN')
+    for name, items in keymaps_items_dict.items():
+        kmi_name, kmi_value, km_name = items[:3]
+        box = layout.box()
+        split = box.split()
+        col = split.column()
+        col.label(name)
+        col.separator()
+        km = kc.keymaps[km_name]
+        get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col)
+
+
+def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
+
+    # for menus and pie_menu
+    if kmi_value:
+        for km_item in km.keymap_items:
+            if km_item.idname == kmi_name and km_item.properties.name == kmi_value:
+                col.context_pointer_set('keymap', km)
+                rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
+                return
+
+        col.label("No hotkey entry found for {}".format(kmi_value))
+        col.operator(Template_Add_Hotkey.bl_idname, icon='ZOOMIN')
+
+    # for operators
+    else:
+        if km.keymap_items.get(kmi_name):
+            col.context_pointer_set('keymap', km)
+            rna_keymap_ui.draw_kmi(
+                    [], kc, km, km.keymap_items[kmi_name], col, 0)
+        else:
+            col.label("No hotkey entry found for {}".format(kmi_name))
+            col.operator(Template_Add_Hotkey.bl_idname, icon='ZOOMIN')
 
 
 def add_hotkey():
