@@ -162,6 +162,13 @@ def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
 def add_hotkey():
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon
+    # In background mode, there's no such thing has keyconfigs.user,
+    # because headless mode doesn't need key combos.
+    # So, to avoid error message in background mode, we need to check if
+    # keyconfigs is loaded.
+    if not kc:
+        return
+
     for items in keymaps_items_dict.values():
         kmi_name, kmi_value, km_name, space_type, region_type = items[:5]
         eventType, eventValue, ctrl, shift, alt = items[5:]
