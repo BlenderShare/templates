@@ -8,14 +8,14 @@ bl_info = {
     "description": "Single Line Explanation",
     "author": "Legigan Jeremy AKA Pistiwique$",
     "version": (0, 0, 1),
-    "blender": (2, 78, 0),
+    "blender": (2, 80, 0),
     "location": "View3D",
     "warning": "This is an unstable version",
     "wiki_url": "",
     "category": "Object"}
 
 
-class TEST_operator_cube_add(Operator):
+class TEST_OT_operator_cube_add(Operator):
     ''' Simple test operator '''
     bl_idname = 'object.cube_add'
     bl_label = "Add Cube"
@@ -31,9 +31,8 @@ class TEST_operator_cube_add(Operator):
 
         return {'FINISHED'}
 
-class TEST_menu_cube_add(Menu):
+class TEST_MT_menu_cube_add(Menu):
     ''' Simple test menu '''
-    bl_idname = "menu.cube_add"
     bl_label = "Menu Cube Add"
 
     def draw(self, context):
@@ -42,9 +41,8 @@ class TEST_menu_cube_add(Menu):
                         icon = 'MESH_CUBE')
 
 
-class TEST_pie_menu_cube_add(Menu):
+class TEST_MT_pie_menu_cube_add(Menu):
     ''' Simple test pie menu '''
-    bl_idname = "pie.cube_add"
     bl_label = "Pie Cube Add"
 
     def draw(self, context):
@@ -97,12 +95,12 @@ keymaps_items_dict = {"Cube Operator":['object.cube_add', None, '3D View '
                                       'RIGHTMOUSE', 'PRESS', True, False, False
                                       ],
 
-                     "Cube Menu":['wm.call_menu', 'menu.cube_add', '3D View '
+                     "Cube Menu":['wm.call_menu', 'TEST_MT_menu_cube_add', '3D View '
                                   'Generic', 'VIEW_3D', 'WINDOW', 'RIGHTMOUSE',
                                   'PRESS', True, True, False
                                   ],
 
-                     "Cube Pie Menu":['wm.call_menu_pie', 'pie.cube_add',
+                     "Cube Pie Menu":['wm.call_menu_pie', 'TEST_MT_pie_menu_cube_add',
                                       '3D View Generic', 'VIEW_3D', 'WINDOW',
                                        'RIGHTMOUSE', 'PRESS', True, True, True
                                       ]
@@ -187,7 +185,7 @@ def add_hotkey():
 
     addon_keymaps.append((km, kmi))
 
-class Template_Add_Hotkey(bpy.types.Operator):
+class TEMPLATE_OT_Add_Hotkey(bpy.types.Operator):
     ''' Add hotkey entry '''
     bl_idname = "template.add_hotkey"
     bl_label = "Add Hotkeys"
@@ -223,8 +221,14 @@ def remove_hotkey():
     addon_keymaps.clear()
 
 
+CLASSES = [TEST_OT_operator_cube_add,
+           TEST_MT_menu_cube_add,
+           TEST_MT_pie_menu_cube_add,
+           TestAddonPreferences,
+           TEMPLATE_OT_Add_Hotkey]
 def register():
-    bpy.utils.register_module(__name__)
+    for cls in CLASSES:
+       bpy.utils.register_class(cls)
     # hotkey setup
     add_hotkey()
 
@@ -232,7 +236,8 @@ def unregister():
     # hotkey cleanup
     remove_hotkey()
 
-    bpy.utils.unregister_module(__name__)
+    for cls in CLASSES:
+       bpy.utils.unregister_class(cls)
 
 if __name__ == "__main__":
     register()
