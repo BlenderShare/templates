@@ -65,7 +65,7 @@ kmi_name: - bl_idname for the operators (exemple: 'object.cube_add')
           - 'wm.call_menu' for menu
           - 'wm.call_menu_pie' for pie menu
 
-kmi_value: - bl_idname for Menu or Pie Menu
+kmi_value: - class name for Menu or Pie Menu
            - None for operators
 
 km_name: keymap name
@@ -127,7 +127,7 @@ def draw_keymap_items(wm, layout):
         box = layout.box()
         split = box.split()
         col = split.column()
-        col.label(name)
+        col.label(text=name)
         col.separator()
         km = kc.keymaps[km_name]
         get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col)
@@ -143,7 +143,7 @@ def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
                 rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
                 return
 
-        col.label("No hotkey entry found for {}".format(kmi_value))
+        col.label(text=f"No hotkey entry found for {kmi_value}")
         col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ZOOMIN')
 
     # for operators
@@ -153,7 +153,7 @@ def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
             rna_keymap_ui.draw_kmi(
                     [], kc, km, km.keymap_items[kmi_name], col, 0)
         else:
-            col.label("No hotkey entry found for {}".format(kmi_name))
+            col.label(text=f"No hotkey entry found for {kmi_name}")
             col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ZOOMIN')
 
 
@@ -226,6 +226,7 @@ CLASSES = [TEST_OT_operator_cube_add,
            TEST_MT_pie_menu_cube_add,
            TestAddonPreferences,
            TEMPLATE_OT_Add_Hotkey]
+
 def register():
     for cls in CLASSES:
        bpy.utils.register_class(cls)
