@@ -144,7 +144,7 @@ def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
                 return
 
         col.label("No hotkey entry found for {}".format(kmi_value))
-        col.operator(Template_Add_Hotkey.bl_idname, icon='ZOOMIN')
+        col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ZOOMIN')
 
     # for operators
     else:
@@ -154,8 +154,21 @@ def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
                     [], kc, km, km.keymap_items[kmi_name], col, 0)
         else:
             col.label("No hotkey entry found for {}".format(kmi_name))
-            col.operator(Template_Add_Hotkey.bl_idname, icon='ZOOMIN')
+            col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ZOOMIN')
 
+
+class TEMPLATE_OT_Add_Hotkey(bpy.types.Operator):
+    ''' Add hotkey entry '''
+    bl_idname = "template.add_hotkey"
+    bl_label = "Add Hotkeys"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    def execute(self, context):
+        add_hotkey()
+
+        self.report({'INFO'},
+                    "Hotkey added in User Preferences -> Input -> Screen -> Screen (Global)")
+        return {'FINISHED'}
 
 def add_hotkey():
     wm = bpy.context.window_manager
@@ -184,19 +197,6 @@ def add_hotkey():
         kmi.active = True
 
     addon_keymaps.append((km, kmi))
-
-class TEMPLATE_OT_Add_Hotkey(bpy.types.Operator):
-    ''' Add hotkey entry '''
-    bl_idname = "template.add_hotkey"
-    bl_label = "Add Hotkeys"
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def execute(self, context):
-        add_hotkey()
-
-        self.report({'INFO'},
-                    "Hotkey added in User Preferences -> Input -> Screen -> Screen (Global)")
-        return {'FINISHED'}
 
 
 def remove_hotkey():
