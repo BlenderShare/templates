@@ -20,9 +20,9 @@ index | index % 4 | index // 4
 
 
 grid_size = 8
-object_amount = 60
+object_amount = 64
 
 for i in range(object_amount):
     x = i % grid_size
     y = i // grid_size
-    bpy.ops.mesh.primitive_cube_add(radius=.1, location=(x,y,1))
+    bpy.ops.mesh.primitive_cube_add(size=.1, location=(x,y,1))
