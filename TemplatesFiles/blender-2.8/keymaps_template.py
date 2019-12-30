@@ -144,7 +144,7 @@ def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
                 return
 
         col.label(text=f"No hotkey entry found for {kmi_value}")
-        col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ZOOMIN')
+        col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ADD')
 
     # for operators
     else:
@@ -154,7 +154,7 @@ def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
                     [], kc, km, km.keymap_items[kmi_name], col, 0)
         else:
             col.label(text=f"No hotkey entry found for {kmi_name}")
-            col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ZOOMIN')
+            col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ADD')
 
 
 class TEMPLATE_OT_Add_Hotkey(bpy.types.Operator):
