@@ -132,6 +132,89 @@ def draw_keymap_items(wm, layout):
         km = kc.keymaps[km_name]
         get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col)
 
+def draw_kmi(display_keymaps, kc, km, kmi, layout, level):
+    map_type = kmi.map_type
+    col = layout.column()
+
+    if kmi.show_expanded:
+        col = col.column(align=True)
+        box = col.box()
+    else:
+        box = col.column()
+
+    split = box.split()
+
+    # header bar
+    row = split.row(align=True)
+    row.prop(kmi, "show_expanded", text="", emboss=False)
+    row.prop(kmi, "active", text="", emboss=False)
+
+    if km.is_modal:
+        row.separator()
+        row.prop(kmi, "propvalue", text="")
+    else:
+        row.label(text=kmi.name)
+
+    row = split.row()
+    row.prop(kmi, "map_type", text="")
+    if map_type == 'KEYBOARD':
+        row.prop(kmi, "type", text="", full_event=True)
+    elif map_type == 'MOUSE':
+        row.prop(kmi, "type", text="", full_event=True)
+    elif map_type == 'NDOF':
+        row.prop(kmi, "type", text="", full_event=True)
+    elif map_type == 'TWEAK':
+        subrow = row.row()
+        subrow.prop(kmi, "type", text="")
+        subrow.prop(kmi, "value", text="")
+    elif map_type == 'TIMER':
+        row.prop(kmi, "type", text="")
+    else:
+        row.label()
+    # Expanded, additional event settings
+    if kmi.show_expanded:
+        box = col.box()
+
+        split = box.split(factor=0.4)
+        sub = split.row()
+
+        if km.is_modal:
+            sub.prop(kmi, "propvalue", text="")
+        else:
+            # One day...
+            # sub.prop_search(kmi, "idname", bpy.context.window_manager, "operators_all", text="")
+            sub.prop(kmi, "idname", text="")
+
+        if map_type not in {'TEXTINPUT', 'TIMER'}:
+            sub = split.column()
+            subrow = sub.row(align=True)
+
+            if map_type == 'KEYBOARD':
+                subrow.prop(kmi, "type", text="", event=True)
+                subrow.prop(kmi, "value", text="")
+            elif map_type in {'MOUSE', 'NDOF'}:
+                subrow.prop(kmi, "type", text="")
+                subrow.prop(kmi, "value", text="")
+
+            subrow = sub.row()
+            subrow.scale_x = 0.75
+            subrow.prop(kmi, "any", toggle=True)
+            subrow.prop(kmi, "shift", toggle=True)
+            subrow.prop(kmi, "ctrl", toggle=True)
+            subrow.prop(kmi, "alt", toggle=True)
+            subrow.prop(kmi, "oskey", text="Cmd", toggle=True)
+            subrow.prop(kmi, "key_modifier", text="", event=True)
+
+        # Operator properties
+        box.template_keymap_item_properties(kmi)
+
+        # Modal key maps attached to this operator
+        if not km.is_modal:
+            kmm = kc.keymaps.find_modal(kmi.idname)
+            if kmm:
+                rna_keymap_ui.draw_km(display_keymaps, kc, kmm, None,
+                                      layout, level + 1)
+                layout.context_pointer_set("keymap", km)
 
 def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
 
@@ -140,7 +223,7 @@ def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
         for km_item in km.keymap_items:
             if km_item.idname == kmi_name and km_item.properties.name == kmi_value:
                 col.context_pointer_set('keymap', km)
-                rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
+                draw_kmi([], kc, km, km_item, col, 0)
                 return
 
         col.label(text=f"No hotkey entry found for {kmi_value}")
@@ -150,8 +233,7 @@ def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
     else:
         if km.keymap_items.get(kmi_name):
             col.context_pointer_set('keymap', km)
-            rna_keymap_ui.draw_kmi(
-                    [], kc, km, km.keymap_items[kmi_name], col, 0)
+            draw_kmi([], kc, km, km.keymap_items[kmi_name], col, 0)
         else:
             col.label(text=f"No hotkey entry found for {kmi_name}")
             col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ADD')
@@ -189,7 +271,6 @@ def add_hotkey():
         kmi = km.keymap_items.new(kmi_name, eventType,
                                   eventValue, ctrl = ctrl, shift = shift,
                                   alt = alt
-
                                   )
         if kmi_value:
             kmi.properties.name = kmi_value
