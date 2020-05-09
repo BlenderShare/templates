@@ -277,7 +277,7 @@ def add_hotkey():
 
         kmi.active = True
 
-    addon_keymaps.append((km, kmi))
+        addon_keymaps.append((km, kmi))
 
 
 def remove_hotkey():
@@ -296,7 +296,7 @@ def remove_hotkey():
         # remove addon_keymap for operators
         else:
             if kmi_names:
-                if kmi.name in kmi_names:
+                if kmi.idname in kmi_names:
                     km.keymap_items.remove(kmi)
 
     addon_keymaps.clear()
