@@ -1,6 +1,8 @@
 import bpy
-from bpy.types import Operator, Menu, AddonPreferences
 import rna_keymap_ui
+
+from bpy.types import Operator, Menu, AddonPreferences
+from bpy.props import StringProperty
 
 
 bl_info = {
@@ -50,61 +52,167 @@ class TEST_MT_pie_menu_cube_add(Menu):
         pie.operator('mesh.primitive_cube_add', text = "Add Cube",
                         icon = 'MESH_CUBE')
 
-'''
-The keymaps_items_dict is the only variable that you have to setup.
-All the rest will be done automatically ;)
+class AddonKeymaps:
+    _addon_keymaps = []
+    _keymaps = {}
 
-keymaps_items_dict = {"Name": [kmi_name, kmi_value, km_name, space_type,
-                               region_type, event_type, event_value, ctrl, 
-                               shift, alt],
-                      }
+    @classmethod
+    def new_keymap(cls, name, kmi_name, kmi_value=None, km_name='3D View',
+                   space_type="VIEW_3D", region_type="WINDOW",
+                   event_type=None, event_value=None, ctrl=False, shift=False,
+                   alt=False, key_modifier="NONE"):
+        """
+        Adds a new keymap
+        :param name: str, Name that will be displayed in the panel preferences
+        :param kmi_name: str
+                - bl_idname for the operators (exemple: 'object.cube_add')
+                - 'wm.call_menu' for menu
+                - 'wm.call_menu_pie' for pie menu
+        :param kmi_value: str
+                - class name for Menu or Pie Menu
+                - None for operators
+        :param km_name: str, keymap name (exemple: '3D View Generic')
+        :param space_type: str, space type keymap is associated with, see:
+                https://docs.blender.org/api/current/bpy.types.KeyMap.html?highlight=space_type#bpy.types.KeyMap.space_type
+        :param region_type: str, region type keymap is associated with, see:
+                https://docs.blender.org/api/current/bpy.types.KeyMap.html?highlight=region_type#bpy.types.KeyMap.region_type
+        :param event_type: str, see:
+                https://docs.blender.org/api/current/bpy.types.Event.html?highlight=event#bpy.types.Event.type
+        :param event_value: str, type of the event, see:
+                https://docs.blender.org/api/current/bpy.types.Event.html?highlight=event#bpy.types.Event.value
+        :param ctrl: bool
+        :param shift: bool
+        :param alt: bool
+        :param key_modifier: str, regular key pressed as a modifier
+                https://docs.blender.org/api/current/bpy.types.KeyMapItem.html?highlight=modifier#bpy.types.KeyMapItem.key_modifier
+        :return:
+        """
+        cls._keymaps.update({name: [kmi_name, kmi_value, km_name, space_type,
+                                    region_type, event_type, event_value,
+                                    ctrl, shift, alt, key_modifier]
+                             })
 
-Name: Name that will be displayed in the panel preferences
+    @classmethod
+    def add_hotkey(cls, kc, keymap_name):
 
-kmi_name: - bl_idname for the operators (exemple: 'object.cube_add')
-          - 'wm.call_menu' for menu
-          - 'wm.call_menu_pie' for pie menu
+        items = cls._keymaps.get(keymap_name)
+        if not items:
+            return
 
-kmi_value: - class name for Menu or Pie Menu
-           - None for operators
+        kmi_name, kmi_value, km_name, space_type, region_type = items[:5]
+        event_type, event_value, ctrl, shift, alt, key_modifier = items[5:]
+        km = kc.keymaps.new(name=km_name, space_type=space_type,
+                            region_type=region_type)
 
-km_name: keymap name
-    exemple: '3D View Generic'
+        kmi = km.keymap_items.new(kmi_name, event_type, event_value,
+                                  ctrl=ctrl,
+                                  shift=shift, alt=alt,
+                                  key_modifier=key_modifier
+                                  )
+        if kmi_value:
+            kmi.properties.name = kmi_value
 
-space_type: space type of the keymap, see:
-https://docs.blender.org/api/blender_python_api_2_78_release/bpy.types.KeyMap.html?highlight=keymap#bpy.types.KeyMap.space_type
+        kmi.active = True
 
-region_type: region type of the keymap, see:
-https://docs.blender.org/api/blender_python_api_2_78_release/bpy.types.KeyMap.html?highlight=keymap#bpy.types.KeyMap.region_type
+        cls._addon_keymaps.append((km, kmi))
 
-event_type: type of the event, see:
-https://docs.blender.org/api/blender_python_api_2_78_release/bpy.types.Event.html?highlight=event#bpy.types.Event.type
+    @staticmethod
+    def register_keymaps():
+        wm = bpy.context.window_manager
+        kc = wm.keyconfigs.addon
+        # In background mode, there's no such thing has keyconfigs.user,
+        # because headless mode doesn't need key combos.
+        # So, to avoid error message in background mode, we need to check if
+        # keyconfigs is loaded.
+        if not kc:
+            return
 
-event_value: value of the event, see:
-https://docs.blender.org/api/blender_python_api_2_78_release/bpy.types.Event.html?highlight=event#bpy.types.Event.value
+        for keymap_name in AddonKeymaps._keymaps.keys():
+            AddonKeymaps.add_hotkey(kc, keymap_name)
 
-ctrl: Boolean
+    @classmethod
+    def unregister_keymaps(cls):
+        kmi_values = [item[1] for item in cls._keymaps.values() if item]
+        kmi_names = [item[0] for item in cls._keymaps.values() if
+                     item not in ['wm.call_menu', 'wm.call_menu_pie']]
 
-shift: Boolean
+        for km, kmi in cls._addon_keymaps:
+            # remove addon keymap for menu and pie menu
+            if hasattr(kmi.properties, 'name'):
+                if kmi_values:
+                    if kmi.properties.name in kmi_values:
+                        km.keymap_items.remove(kmi)
 
-alt: Boolean
+            # remove addon_keymap for operators
+            else:
+                if kmi_names:
+                    if kmi.idname in kmi_names:
+                        km.keymap_items.remove(kmi)
 
-'''
-keymaps_items_dict = {"Cube Operator":['object.cube_add', None, '3D View '
-                                      'Generic', 'VIEW_3D', 'WINDOW',
-                                      'RIGHTMOUSE', 'PRESS', True, False, False
-                                      ],
+        cls._addon_keymaps.clear()
 
-                     "Cube Menu":['wm.call_menu', 'TEST_MT_menu_cube_add', '3D View '
-                                  'Generic', 'VIEW_3D', 'WINDOW', 'RIGHTMOUSE',
-                                  'PRESS', True, True, False
-                                  ],
+    @staticmethod
+    def get_hotkey_entry_item(name, kc, km, kmi_name, kmi_value, col):
 
-                     "Cube Pie Menu":['wm.call_menu_pie', 'TEST_MT_pie_menu_cube_add',
-                                      '3D View Generic', 'VIEW_3D', 'WINDOW',
-                                       'RIGHTMOUSE', 'PRESS', True, True, True
-                                      ]
-                     }
+        # for menus and pie_menu
+        if kmi_value:
+            for km_item in km.keymap_items:
+                if km_item.idname == kmi_name and km_item.properties.name == kmi_value:
+                    col.context_pointer_set('keymap', km)
+                    rna_keymap_ui.draw_kmi([], kc, km, km_item, col, 0)
+                    return
+
+            col.label(text=f"No hotkey entry found for {name}")
+            col.operator(TEMPLATE_OT_restore_hotkey.bl_idname,
+                         text="Restore keymap",
+                         icon='ADD').km_name = km.name
+
+        # for operators
+        else:
+            if km.keymap_items.get(kmi_name):
+                col.context_pointer_set('keymap', km)
+                rna_keymap_ui.draw_kmi([], kc, km, km.keymap_items[kmi_name],
+                                       col, 0)
+
+            else:
+                col.label(text=f"No hotkey entry found for {name}")
+                col.operator(TEMPLATE_OT_restore_hotkey.bl_idname,
+                             text="Restore keymap",
+                             icon='ADD').km_name = km.name
+
+    @staticmethod
+    def draw_keymap_items(wm, layout):
+        kc = wm.keyconfigs.user
+
+        for name, items in AddonKeymaps._keymaps.items():
+            kmi_name, kmi_value, km_name = items[:3]
+            box = layout.box()
+            split = box.split()
+            col = split.column()
+            col.label(text=name)
+            col.separator()
+            km = kc.keymaps[km_name]
+            AddonKeymaps.get_hotkey_entry_item(name, kc, km, kmi_name,
+                                             kmi_value, col)
+
+
+class TEMPLATE_OT_restore_hotkey(Operator):
+    bl_idname = "template.restore_hotkey"
+    bl_label = "Restore hotkeys"
+    bl_options = {'REGISTER', 'INTERNAL'}
+
+    km_name: StringProperty()
+
+    def execute(self, context):
+        context.preferences.active_section = 'KEYMAP'
+        wm = context.window_manager
+        kc = wm.keyconfigs.addon
+        km = kc.keymaps.get(self.km_name)
+        if km:
+            km.restore_to_default()
+            context.preferences.is_dirty = True
+        context.preferences.active_section = 'ADDONS'
+        return {'FINISHED'}
 
 
 class TestAddonPreferences(AddonPreferences):
@@ -114,212 +222,35 @@ class TestAddonPreferences(AddonPreferences):
         wm = context.window_manager
         layout = self.layout
 
-        draw_keymap_items(wm, layout)
-
-
-addon_keymaps = []
-
-def draw_keymap_items(wm, layout):
-    kc = wm.keyconfigs.user
-
-    for name, items in keymaps_items_dict.items():
-        kmi_name, kmi_value, km_name = items[:3]
-        box = layout.box()
-        split = box.split()
-        col = split.column()
-        col.label(text=name)
-        col.separator()
-        km = kc.keymaps[km_name]
-        get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col)
-
-def draw_kmi(display_keymaps, kc, km, kmi, layout, level):
-    map_type = kmi.map_type
-    col = layout.column()
-
-    if kmi.show_expanded:
-        col = col.column(align=True)
-        box = col.box()
-    else:
-        box = col.column()
-
-    split = box.split()
-
-    # header bar
-    row = split.row(align=True)
-    row.prop(kmi, "show_expanded", text="", emboss=False)
-    row.prop(kmi, "active", text="", emboss=False)
-
-    if km.is_modal:
-        row.separator()
-        row.prop(kmi, "propvalue", text="")
-    else:
-        row.label(text=kmi.name)
-
-    row = split.row()
-    row.prop(kmi, "map_type", text="")
-    if map_type == 'KEYBOARD':
-        row.prop(kmi, "type", text="", full_event=True)
-    elif map_type == 'MOUSE':
-        row.prop(kmi, "type", text="", full_event=True)
-    elif map_type == 'NDOF':
-        row.prop(kmi, "type", text="", full_event=True)
-    elif map_type == 'TWEAK':
-        subrow = row.row()
-        subrow.prop(kmi, "type", text="")
-        subrow.prop(kmi, "value", text="")
-    elif map_type == 'TIMER':
-        row.prop(kmi, "type", text="")
-    else:
-        row.label()
-    # Expanded, additional event settings
-    if kmi.show_expanded:
-        box = col.box()
-
-        split = box.split(factor=0.4)
-        sub = split.row()
-
-        if km.is_modal:
-            sub.prop(kmi, "propvalue", text="")
-        else:
-            # One day...
-            # sub.prop_search(kmi, "idname", bpy.context.window_manager, "operators_all", text="")
-            sub.prop(kmi, "idname", text="")
-
-        if map_type not in {'TEXTINPUT', 'TIMER'}:
-            sub = split.column()
-            subrow = sub.row(align=True)
-
-            if map_type == 'KEYBOARD':
-                subrow.prop(kmi, "type", text="", event=True)
-                subrow.prop(kmi, "value", text="")
-            elif map_type in {'MOUSE', 'NDOF'}:
-                subrow.prop(kmi, "type", text="")
-                subrow.prop(kmi, "value", text="")
-
-            subrow = sub.row()
-            subrow.scale_x = 0.75
-            subrow.prop(kmi, "any", toggle=True)
-            subrow.prop(kmi, "shift", toggle=True)
-            subrow.prop(kmi, "ctrl", toggle=True)
-            subrow.prop(kmi, "alt", toggle=True)
-            subrow.prop(kmi, "oskey", text="Cmd", toggle=True)
-            subrow.prop(kmi, "key_modifier", text="", event=True)
-
-        # Operator properties
-        box.template_keymap_item_properties(kmi)
-
-        # Modal key maps attached to this operator
-        if not km.is_modal:
-            kmm = kc.keymaps.find_modal(kmi.idname)
-            if kmm:
-                rna_keymap_ui.draw_km(display_keymaps, kc, kmm, None,
-                                      layout, level + 1)
-                layout.context_pointer_set("keymap", km)
-
-def get_hotkey_entry_item(kc, km, kmi_name, kmi_value, col):
-
-    # for menus and pie_menu
-    if kmi_value:
-        for km_item in km.keymap_items:
-            if km_item.idname == kmi_name and km_item.properties.name == kmi_value:
-                col.context_pointer_set('keymap', km)
-                draw_kmi([], kc, km, km_item, col, 0)
-                return
-
-        col.label(text=f"No hotkey entry found for {kmi_value}")
-        col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ADD')
-
-    # for operators
-    else:
-        if km.keymap_items.get(kmi_name):
-            col.context_pointer_set('keymap', km)
-            draw_kmi([], kc, km, km.keymap_items[kmi_name], col, 0)
-        else:
-            col.label(text=f"No hotkey entry found for {kmi_name}")
-            col.operator(TEMPLATE_OT_Add_Hotkey.bl_idname, icon='ADD')
-
-
-class TEMPLATE_OT_Add_Hotkey(bpy.types.Operator):
-    ''' Add hotkey entry '''
-    bl_idname = "template.add_hotkey"
-    bl_label = "Add Hotkeys"
-    bl_options = {'REGISTER', 'INTERNAL'}
-
-    def execute(self, context):
-        add_hotkey()
-
-        self.report({'INFO'},
-                    "Hotkey added in User Preferences -> Input -> Screen -> Screen (Global)")
-        return {'FINISHED'}
-
-def add_hotkey():
-    wm = bpy.context.window_manager
-    kc = wm.keyconfigs.addon
-    # In background mode, there's no such thing has keyconfigs.user,
-    # because headless mode doesn't need key combos.
-    # So, to avoid error message in background mode, we need to check if
-    # keyconfigs is loaded.
-    if not kc:
-        return
-
-    for items in keymaps_items_dict.values():
-        kmi_name, kmi_value, km_name, space_type, region_type = items[:5]
-        eventType, eventValue, ctrl, shift, alt = items[5:]
-        km = kc.keymaps.new(name = km_name, space_type = space_type,
-                            region_type=region_type)
-
-        kmi = km.keymap_items.new(kmi_name, eventType,
-                                  eventValue, ctrl = ctrl, shift = shift,
-                                  alt = alt
-                                  )
-        if kmi_value:
-            kmi.properties.name = kmi_value
-
-        kmi.active = True
-
-        addon_keymaps.append((km, kmi))
-
-
-def remove_hotkey():
-    ''' clears all addon level keymap hotkeys stored in addon_keymaps '''
-
-    kmi_values = [item[1] for item in keymaps_items_dict.values() if item]
-    kmi_names = [item[0] for item in keymaps_items_dict.values() if item not in ['wm.call_menu', 'wm.call_menu_pie']]
-
-    for km, kmi in addon_keymaps:
-        # remove addon keymap for menu and pie menu
-        if hasattr(kmi.properties, 'name'):
-            if kmi_values:
-                if kmi.properties.name in kmi_values:
-                    km.keymap_items.remove(kmi)
-
-        # remove addon_keymap for operators
-        else:
-            if kmi_names:
-                if kmi.idname in kmi_names:
-                    km.keymap_items.remove(kmi)
-
-    addon_keymaps.clear()
-
+        AddonKeymaps.draw_keymap_items(wm, layout)
 
 CLASSES = [TEST_OT_operator_cube_add,
            TEST_MT_menu_cube_add,
            TEST_MT_pie_menu_cube_add,
            TestAddonPreferences,
-           TEMPLATE_OT_Add_Hotkey]
+           TEMPLATE_OT_restore_hotkey]
 
 def register():
     for cls in CLASSES:
        bpy.utils.register_class(cls)
-    # hotkey setup
-    add_hotkey()
+
+    AddonKeymaps.new_keymap('Cube Operator', 'object.cube_add', None,
+                            '3D View Generic', 'VIEW_3D', 'WINDOW', 'RIGHTMOUSE',
+                            'PRESS', True, False, False, 'NONE'
+                            )
+    AddonKeymaps.new_keymap('Cube Menu', 'wm.call_menu', 'TEST_MT_menu_cube_add',
+                            '3D View Generic', 'VIEW_3D', 'WINDOW', 'RIGHTMOUSE',
+                            'PRESS', True, True, False, 'NONE'
+                            )
+    AddonKeymaps.new_keymap('Cube Pie Menu', 'wm.call_menu_pie',
+                            'TEST_MT_pie_menu_cube_add', '3D View Generic',
+                            'VIEW_3D', 'WINDOW', 'RIGHTMOUSE', 'PRESS', True,
+                            True, True, 'NONE'
+                            )
+
+    AddonKeymaps.register_keymaps()
 
 def unregister():
-    # hotkey cleanup
-    remove_hotkey()
-
+    AddonKeymaps.unregister_keymaps()
     for cls in CLASSES:
        bpy.utils.unregister_class(cls)
-
-if __name__ == "__main__":
-    register()
