@@ -24,10 +24,6 @@ class OBJECT_OT_cube(Operator):
     bl_description = ""
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        return True
-
     def execute(self, context):
         bpy.ops.mesh.primitive_cube_add()
         
@@ -44,6 +40,7 @@ class VIEW3D_PT__test(Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.enabled = bpy.context.active_object.mode == 'OBJECT'
         layout.operator("object.cube", text="Add Cube", icon='MESH_CUBE')
         
 # Add-ons Preferences Update Panel
